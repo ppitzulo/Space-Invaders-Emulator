@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int Disassemble8080Op(unsigned char *codebuffer, int pc)    
+int Disassemble8080Op(unsigned char *code, int pc)//unsigned char *codebuffer, int pc)    
 {    
-    unsigned char *code = &codebuffer[pc];
+    // unsigned char *code = &codebuffer[pc];
     int opbytes = 1;    
-    printf ("%04x ", pc);    
+    printf ("%04x opcode=%X ", pc, *code);
+    // printf ("code %x ", *code); 
+    // switch (*code)
     switch (*code)    
     {    
         case 0x00: printf("NOP"); break;    

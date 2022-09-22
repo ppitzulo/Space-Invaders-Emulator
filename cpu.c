@@ -4,6 +4,8 @@
 #include "disassembler.h"
 #include "cpu.h"
 
+uint8_t shift_offset;
+
 void CheckFlags(uint16_t result, State8080* state)
 {
     if (result & 0xff)
@@ -54,6 +56,48 @@ void CheckFlags(uint16_t result, State8080* state)
     }
 }
 
+void GenerateInterrupt(State8080* state, int interrupt_num) {
+    // Push PC
+    state->memory[state->sp - 1] = (state->pc & 0xFF) >> 8;
+    state->memory[state->sp - 2] = (state->pc & 0xFF);
+    state->sp = state->sp - 2;
+    // might need to add this back in
+    // cycles += 11;
+    state->pc = 8 * interrupt_num;
+
+    
+}
+
+
+uint8_t MachineIN(uint8_t port)    
+   {    
+       uint8_t a;    
+       switch(port)    
+       {    
+           case 3:    
+           {    
+               uint16_t v = (shift1<<8) | shift0;    
+               a = ((v >> (8-shift_offset)) & 0xff);    
+           }    
+        break;    
+       }    
+       return a;    
+   }    
+
+void MachineOUT(uint8_t port, uint8_t value)    
+   {    
+       switch(port)    
+       {    
+           case 2:    
+               shift_offset = value & 0x7;    
+               break;    
+           case 4:    
+               shift0 = shift1;    
+               shift1 = value;    
+               break;    
+       }    
+
+   }  
 
 void UnimplementedInstruction(State8080* state)
 {
@@ -67,12 +111,25 @@ void UnimplementedInstruction(State8080* state)
 int Emulate8080Op(State8080* state)
 {
     int cycles = 0;
+    int lastInterrupt = 0;
 
     while (cycles < 33333)
     {
         unsigned char *opcode = &state->memory[state->pc];
         Disassemble8080Op(state->memory, state->pc);
         
+        if (*opcode == 0xdb) {
+            uint8_t port = opcode[1];
+            state->a = MachineIN(state, port);
+            state->pc++; 
+        }
+        else if(*opcode == 0xd3) {
+            uint8_t port = opcode[1];
+            MachineOUT(state, port);
+            state->pc++;
+        }
+        else {
+            
         state->pc++;
         switch(*opcode)
         {
@@ -555,6 +612,14 @@ int Emulate8080Op(State8080* state)
             }
             case 0xff: UnimplementedInstruction(state); break;
         }
+        }
+        // if (time() - lastInterrupt > 1.0/60.0) {
+        //     if (state->cc.interrupt_enabled) {
+        //         GenerateInterrupt(state, 2);
+
+        //         lastInterrupt = time();
+        //     }
+        // }
         printf("Carry=%d, Parity=%d, Sign=%d, Zero=%d, Cycles=%d\n", state->cc.cy, state->cc.p,
             state->cc.s, state->cc.z, cycles);
         printf("A $%02x B $%02x C $%02x D $%02x E $%02x H $%02x L $%02x SP %04x\n\n",

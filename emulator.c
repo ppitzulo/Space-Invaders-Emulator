@@ -41,6 +41,7 @@ void draw_video_ram() {
 
 int main(int argc, char* argv[])
 {
+    int lastInterrupt = 0;
     FILE *rom = fopen(argv[1], "rb");
     state.pc = 0;
     SDL_Event event;

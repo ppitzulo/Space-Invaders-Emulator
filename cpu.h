@@ -1,10 +1,5 @@
 #ifndef _cpu_h
 #define _cpu_h
-
-// typedef struct ConditionCodes;
-
-// typedef struct State8080;
-
 typedef struct ConditionCodes {
     uint8_t    z:1;
     uint8_t    s:1;
@@ -27,7 +22,6 @@ typedef struct State8080 {
     uint16_t    pc;
     uint8_t     *memory;
     struct      ConditionCodes      cc;
-    // uint8_t     int_enable;
     uint8_t port1;
     uint8_t port2;
     uint16_t shift0, shift1;
@@ -35,9 +29,6 @@ typedef struct State8080 {
     uint16_t outport3;
     uint16_t outport5;
 } State8080;
-
-
-
 
 void UnimplementedInstruction(State8080* state);
 void EI();

@@ -241,10 +241,10 @@ int Emulate8080Op(State8080* state)
             {
                 //DAD
                 uint16_t HL = (state->h<<8) | state->l;
-                uint16_t result = (HL * 2);
-                state->h = result>>8;
-                state->l = result<<8;
-                CheckFlags(result, state);
+                HL = (HL * 2);
+                state->h = HL>>8;
+                state->l = HL<<8;
+                CheckFlags(HL, state);
                 cycles += 10;
                 break;
             }
@@ -383,7 +383,7 @@ int Emulate8080Op(State8080* state)
             {
                 //POP
                 state->c = state->memory[state->sp];
-                state->b = state->memory[state->sp++];
+                state->b = state->memory[state->sp+1];
                 state->sp = state->sp + 2;
                 cycles += 10;
                 break;
@@ -439,10 +439,15 @@ int Emulate8080Op(State8080* state)
             case 0xcd:
             {
                 //CALL
-                state->memory[state->pc - 1] = state->pc>>8;
-                state->memory[state->pc - 2] = state->pc<<8;
-                state->sp = state->sp - 2;
-                state->pc = (opcode[2]<<8) | opcode[1];
+                uint16_t    ret = state->pc+2;    
+                state->memory[state->sp-1] = (ret >> 8) & 0xff;    
+                state->memory[state->sp-2] = (ret & 0xff);    
+                state->sp = state->sp - 2;    
+                state->pc = (opcode[2] << 8) | opcode[1];
+                // state->memory[state->pc - 1] = state->pc>>8;
+                // state->memory[state->pc - 2] = state->pc<<8;
+                // state->sp = state->sp - 2;
+                // state->pc = (opcode[2]<<8) | opcode[1];
                 cycles += 17;
                 break;
             }
@@ -450,7 +455,7 @@ int Emulate8080Op(State8080* state)
             {
                 //POP
                 state->e = state->memory[state->sp];
-                state->d = state->memory[state->sp++];
+                state->d = state->memory[state->sp+1];
                 state->sp = state->sp + 2;
                 cycles += 10;
                 break;
@@ -458,7 +463,7 @@ int Emulate8080Op(State8080* state)
             case 0xd3:
             {
                 //OUT
-                state->pc += 2;
+                state->pc += 1;
                 cycles += 10;
                 break;
             }
@@ -475,7 +480,7 @@ int Emulate8080Op(State8080* state)
             {
                 //POP
                 state->l = state->memory[state->sp];
-                state->h = state->memory[state->sp++];
+                state->h = state->memory[state->sp+1];
                 state->sp = state->sp + 2;
                 cycles += 10;
                 break;
@@ -549,14 +554,6 @@ int Emulate8080Op(State8080* state)
             case 0xfe:
             {
                 //CPI
-                if(state->a - opcode[1])
-                {
-                    state->cc.z = 0;
-                }
-                else
-                {
-                    state->cc.z = 1;
-                }
                 CheckFlags((state->a - opcode[1]), state);
                 state->pc += 2;
                 cycles += 7;
@@ -564,7 +561,7 @@ int Emulate8080Op(State8080* state)
             }
             case 0xff: UnimplementedInstruction(state); break;
         }
-        printf("\tCarry=%d, Parity=%d, Sign=%d, Zero=%\n", state->cc.cy, state->cc.p,
+        printf("\tCarry=%d, Parity=%d, Sign=%d, Zero=%d\n", state->cc.cy, state->cc.p,
             state->cc.s, state->cc.z);
         printf("\tA $%02x B $%02x C $%02x D $%02x E $%02x H $%02x L $%02x SP %04x\n\n",
             state->a, state->b, state->c, state->d,

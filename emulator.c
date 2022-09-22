@@ -13,10 +13,110 @@ SDL_Surface *surface;
 SDL_Window *window;
 State8080 state;
 
-long long time() {
+void getInput(State8080 *state)
+{
+    SDL_Event event;
+
+    while (SDL_PollEvent(&event))
+    {
+        // printf("POLL EVENT\n");
+        // if (event.type == SDL_KEYDOWN) {
+        //     printf("before setting key\n");
+        //     SDL_Scancode key = event.key.keysym.scancode;
+        //     if (key == SDL_SCANCODE_C) {
+        //         printf("INPUT C");
+        //         state->port1 |= 1;
+        //     }
+        // }
+        // else if (event.type == SDL_KEYUP) {
+        //     SDL_Scancode key = event.key.keysym.scancode;
+        //     if (key == SDL_SCANCODE_C) {
+        //         state->port1 &= ~1;
+        //     }
+        // }
+        // printf("Here1\n");
+        if (event.type == SDL_KEYDOWN)
+        {
+            // printf("Here2\n");
+            switch (event.key.keysym.sym)
+            {
+                // printf("Here3\n");
+                case SDLK_LEFT:
+                {
+                    state->port1 |= 0x20;
+                    break;
+                }
+                case SDLK_c:
+                {
+                    // insert coin
+                    state->port1 |= 1;
+                    state->memory[0x20c0] = 0;
+                    printf("DEBUG: KEY z\n");
+                    break;
+                }
+                case SDLK_s:
+                {
+                    state->port1 |= 1 << 1;
+                    printf("DEBUG KEY s\n");
+                    break;
+                }
+                // case SDLK_c:
+                // {
+                //     state->port1 |= 1 << 2;
+                //     break;
+                // }
+                case SDLK_d:
+                {
+                    state->port1 |= 1 << 3;
+                    break;
+                }
+            }
+            // break;
+        }
+        if (event.type == SDL_KEYUP)
+        {
+            switch (event.key.keysym.sym)
+            {
+                case SDLK_LEFT:
+                {
+                    state->port1 &= 0xDF;
+                    break;
+                }
+                case SDLK_s:
+                {
+                    state->port1 &= ~(1 << 1);
+                    break;
+                }
+                case SDLK_c:
+                {
+                    state->port1 &= ~1;
+                    break;
+                }
+                // case SDLK_c:
+                // {
+                //     state->port1 &= ~(1 << 2);
+                //     break;
+                // }
+                case SDLK_d:
+                {
+                    state->port1 &= ~(1 << 3);
+                    break;
+                }
+            }
+            // break;
+        }
+        if (event.window.event == SDL_WINDOWEVENT_CLOSE)
+        {
+            break;
+        }
+    }
+}
+
+long long time()
+{
     struct timeval te;
     gettimeofday(&te, NULL);
-    long long milliseconds  = te.tv_sec*1000LL + te.tv_usec/1000;
+    long long milliseconds = te.tv_sec * 1000LL + te.tv_usec / 1000;
 
     return milliseconds;
 }
@@ -32,7 +132,7 @@ void draw_video_ram()
         {
             for (int j = 0; j < 8; j++)
             {
-                int idx = ((row - j) * WIDTH) + col;
+                int idx = (row - j) * WIDTH + col;
 
                 if (state.memory[i] & 1 << j)
                 {
@@ -64,21 +164,8 @@ void GenerateInterrupt(State8080 *state, int interrupt_num)
     // might need to add this back in
     // cycles += 11;
     state->pc = 8 * interrupt_num;
+    state->int_enable = 0;
 }
-
-// void MachineOUT(uint8_t port, uint8_t value)
-// {
-//     switch (port)
-//     {
-//     case 2:
-//         uint8_t shift_offset = value & 0x7;
-//         break;
-//     case 4:
-//         shift0 = shift1;
-//         shift1 = value;
-//         break;
-//     }
-// }
 
 int main(int argc, char *argv[])
 {
@@ -134,11 +221,11 @@ int main(int argc, char *argv[])
             }
         }
         draw_video_ram();
-        SDL_PollEvent(&event);
-        if (event.window.event == SDL_WINDOWEVENT_CLOSE)
-        {
-            break;
-        }
+        // SDL_PollEvent(&event);
+        
+        getInput(&state);
+        // SDL_PollEvent(&event);
+        
     }
 
     return 0;

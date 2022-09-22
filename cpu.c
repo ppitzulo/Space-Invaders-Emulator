@@ -4,8 +4,7 @@
 #include "disassembler.h"
 #include "cpu.h"
 
-uint16_t shift0, shift1;
-uint8_t shift_offset;
+
 
 void CheckFlags(uint16_t result, State8080* state)
 {
@@ -69,26 +68,39 @@ void UnimplementedInstruction(State8080* state)
     exit(1);
 }
 
-int machineIN(uint8_t port) {
-    uint8_t a;
+uint16_t machineIN(State8080 state, uint8_t port) {
+    uint16_t a;
     switch(port) {
+        printf("%d\n", port);
+        case 0:
+            return 0x0f;
+        case 1:
+            return state.port1;
+        case 2:
+            return 0x0;
         case 3: {
-            uint16_t v = (shift1 << 8) | shift0;
-            a = ((v >> (8 - shift_offset)) & 0xff);
+            uint16_t v = (state.shift1 << 8) | state.shift0;
+            a = ((v >> (8 - state.shift_offset)) & 0xff);
         }
     }
     return a;
 }
 
 
-void machineOUT(uint8_t port, uint8_t value) {
+void machineOUT(uint16_t port, State8080 *state) {
     switch(port) {
         case 2:
-            shift_offset = value & 0x7;
+            state->shift_offset = state->a & 0x7;
+            break;
+        case 3:
+            state->outport3 = state->a;
             break;
         case 4:
-            shift0 = shift1;
-            shift1 = value;
+            state->shift0 = state->shift1;
+            state->shift1 = state->a;
+            break;
+        case 5:
+            state->outport5 = state->a;
             break;
     }
 }
@@ -99,8 +111,6 @@ int Emulate8080Op(State8080* state)
     int cycles = 0;
     int lastInterrupt = 0;
 
-    // while (cycles < 33333)
-    // {
         unsigned char *opcode = &state->memory[state->pc];
         Disassemble8080Op(state->memory, state->pc);
         
@@ -325,74 +335,466 @@ int Emulate8080Op(State8080* state)
                 cycles += 7;
                 break;
             }
+            case 0x40:
+            {
+                state->b = state->b;
+                //state->pc++;
+                break;
+            }
+            case 0x41:
+            {
+                state->b = state->c;
+                //state->pc++;
+                break;
+            }
+            case 0x42:
+            {
+                state->b = state->d;
+                //state->pc++;
+                break;
+            }
+            case 0x43:
+            {
+                state->b = state->e;
+                //state->pc++;
+                break;
+            }
+            case 0x44:
+            {
+                state->b = state->h;
+                //state->pc++;
+                break;
+            }
+            case 0x45:
+            {
+                state->b = state->l;
+                //state->pc++;
+                break;
+            }
+            case 0x46:
+            {
+                uint16_t memory_address = (opcode[2] << 8) | opcode[1];
+                state->b = state->memory[memory_address];
+                //state->pc++;
+                break;
+            }
+            case 0x47:
+            {
+                state->b = state->a;
+                break;
+            }
+            case 0x48:
+            {
+                state->c = state->b;
+                //state->pc++;
+                break;
+            }
+            case 0x49:
+            {
+                state->c = state->c;
+                //state->pc++;
+                break;
+            }
+            case 0x4a:
+            {
+                state->c = state->d;
+                //state->pc++;
+                break;
+            }
+            case 0x4b:
+            {
+                state->c = state->e;
+                //state->pc++;
+                break;
+            }
+            case 0x4c:
+            {
+                state->c = state->h;
+                //state->pc++;
+                break;
+            }
+            case 0x4d:
+            {
+                state->c = state->l;
+                //state->pc++;
+                break;
+            }
+            case 0x4e:
+            {
+                uint16_t memory_address = (opcode[2] << 8) | opcode[1];
+                state->b = state->memory[memory_address];
+                //state->pc++;
+                break;
+            }
+            case 0x4f:
+            {
+                state->c = state->a;
+                break;
+            }
+            case 0x50:
+            {
+                state->d = state->b;
+                //state->pc++;
+                break;
+            }
+            case 0x51:
+            {
+                state->d = state->c;
+                //state->pc++;
+                break;
+            }
+            case 0x52:
+            {
+                state->d = state->d;
+                //state->pc++;
+                break;
+            }
+            case 0x53:
+            {
+                state->d = state->e;
+                //state->pc++;
+                break;
+            }
+            case 0x54:
+            {
+                state->d = state->h;
+                // state->pc++;
+                break;
+            }
+            case 0x55:
+            {
+                state->d = state->l;
+                // state->pc++;
+                break;
+            }
             case 0x56:
             {
-                //MOV
-                uint16_t HL = (state->h << 8) | state->l;
-                state->d = state->memory[HL];
-                cycles += 7;
+                uint16_t memory_address = (opcode[2] << 8) | opcode[1];
+                state->d = state->memory[memory_address];
+                // state->pc++;
+                break;
+            }
+            case 0x57:
+            {
+                state->d = state->a;
+                break;
+            }
+            case 0x58:
+            {
+                state->e = state->b;
+                // state->pc++;
+                break;
+            }
+            case 0x59:
+            {
+                state->e = state->c;
+                // state->pc++;
+                break;
+            }
+            case 0x5a:
+            {
+                state->e = state->d;
+                // state->pc++;
+                break;
+            }
+            case 0x5b:
+            {
+                state->e = state->e;
+                // state->pc++;
+                break;
+            }
+            case 0x5c:
+            {
+                state->e = state->h;
+                // state->pc++;
+                break;
+            }
+            case 0x5d:
+            {
+                state->e = state->l;
+                // state->pc++;
                 break;
             }
             case 0x5e:
             {
-                //MOV
-                uint16_t HL = (state->h << 8) | state->l;
-                state->e = state->memory[HL];
-                cycles += 7;
+                uint16_t memory_address = (opcode[2] << 8) | opcode[1];
+                state->e = state->memory[memory_address];
+                break;
+            }
+            case 0x5f:
+            {
+                state->h = state->a;
+                break;
+            }
+            case 0x60:
+            {
+                state->h = state->b;
+                // state->pc++;
+                break;
+            }
+            case 0x61:
+            {
+                state->h = state->c;
+                // state->pc++;
+                break;
+            }
+            case 0x62:
+            {
+                state->h = state->d;
+                // state->pc++;
+                break;
+            }
+            case 0x63:
+            {
+                state->h = state->e;
+                // state->pc++;
+                break;
+            }
+            case 0x64:
+            {
+                state->h = state->h;
+                // state->pc++;
+                break;
+            }
+            case 0x65:
+            {
+                state->h = state->l;
+                // state->pc++;
                 break;
             }
             case 0x66:
             {
-                //MOV
-                uint16_t HL = (state->h << 8) | state->l;
-                state->h = state->memory[HL];
-                cycles += 7;
+                uint16_t memory_address = (opcode[2] << 8) | opcode[1];
+                state->h = state->memory[memory_address];
+                break;
+            }
+            case 0x67:
+            {
+                state->h = state->a;
+                break;
+            }
+            case 0x68:
+            {
+                state->l = state->b;
+                // state->pc++;
+                break;
+            }
+            case 0x69:
+            {
+                state->l = state->c;
+                // state->pc++;
+                break;
+            }
+            case 0x6a:
+            {
+                state->l = state->d;
+                // state->pc++;
+                break;
+            }
+            case 0x6b:
+            {
+                state->l = state->e;
+                // state->pc++;
+                break;
+            }
+            case 0x6c:
+            {
+                state->l = state->h;
+                // state->pc++;
+                break;
+            }
+            case 0x6d:
+            {
+                state->l = state->l;
+                // state->pc++;
+                break;
+            }
+            case 0x6e:
+            {
+                uint16_t memory_address = (opcode[2] << 8) | opcode[1];
+                state->l = state->memory[memory_address];
+                // state->pc++;
                 break;
             }
             case 0x6f:
             {
-                //MOV
                 state->l = state->a;
-                cycles += 5;
                 break;
             }
+            case 0x70:
+            {
+                uint16_t memory_address = (opcode[2] << 8) | opcode[1];
+                state->memory[memory_address] = state->b;
+                // state->pc++;
+                break;
+            }
+            case 0x71:
+            {
+                uint16_t memory_address = (opcode[2] << 8) | opcode[1];
+                state->memory[memory_address] = state->c;
+                // state->pc++;
+                break;
+            }
+            case 0x72:
+            {
+                uint16_t memory_address = (opcode[2] << 8) | opcode[1];
+                state->memory[memory_address] = state->d;
+                // state->pc++;
+                break;
+            }
+            case 0x73:
+            {
+                uint16_t memory_address = (opcode[2] << 8) | opcode[1];
+                state->memory[memory_address] = state->e;
+                // state->pc++;
+                break;
+            }
+            case 0x74:
+            {
+                uint16_t memory_address = (opcode[2] << 8) | opcode[1];
+                state->memory[memory_address] = state->h;
+                // state->pc++;
+                break;
+            }
+            case 0x75:
+            {
+                uint16_t memory_address = (opcode[2] << 8) | opcode[1];
+                state->memory[memory_address] = state->l;
+                // state->pc++;
+                break;
+            }
+            //HLT
+            // case 0x76:
+            // {
+            //     uint16_t memory_address = (opcode[2] << 8) | opcode[1];
+            //     state->l = state->memory[memory_address];
+            //     state->pc++;
+            //     break;
+            // }
             case 0x77:
             {
-                //MOV
-                uint16_t HL = (state->h << 8) | state->l;
-                state->memory[HL] = state->a;
-                cycles += 7;
+                uint16_t memory_address = (state->h  << 8) | state->l;
+                state->memory[memory_address] =  state->a;
+                // state->pc++;
+                break;
+            }
+            case 0x78:
+            {
+                state->a = state->b;
+                // state->pc++;
+                break;
+            }
+            case 0x79:
+            {
+                state->a = state->c;
+                // state->pc++;
                 break;
             }
             case 0x7a:
             {
-                //MOV
                 state->a = state->d;
-                cycles += 5;
+                // state->pc++;
                 break;
             }
             case 0x7b:
             {
-                //MOV
                 state->a = state->e;
-                cycles += 5;
+                // state->pc++;
                 break;
             }
             case 0x7c:
             {
-                //MOV
                 state->a = state->h;
-                cycles += 5;
+                // state->pc++;
+                break;
+            }
+            case 0x7d:
+            {
+                state->a = state->l;
+                // state->pc++;
                 break;
             }
             case 0x7e:
             {
-                //MOV 
-                uint16_t HL = (state->h << 8) | state->l;
-                state->a = state->memory[HL];
-                cycles += 7;
+                uint16_t memory_address = (opcode[2] << 8) | opcode[1];
+                state->a = state->memory[memory_address];
+                // state->pc++;
                 break;
             }
+            case 0x7f:
+            {
+                state->a = state->a;
+                break;
+            }
+            
+            // case 0x56:
+            // {
+            //     //MOV
+            //     uint16_t HL = (state->h << 8) | state->l;
+            //     state->d = state->memory[HL];
+            //     cycles += 7;
+            //     break;
+            // }
+            // case 0x5e:
+            // {
+            //     //MOV
+            //     uint16_t HL = (state->h << 8) | state->l;
+            //     state->e = state->memory[HL];
+            //     cycles += 7;
+            //     break;
+            // }
+            // case 0x66:
+            // {
+            //     //MOV
+            //     uint16_t HL = (state->h << 8) | state->l;
+            //     state->h = state->memory[HL];
+            //     cycles += 7;
+            //     break;
+            // }
+            // case 0x6f:
+            // {
+            //     //MOV
+            //     state->l = state->a;
+            //     cycles += 5;
+            //     break;
+            // }
+            // case 0x77:
+            // {
+            //     //MOV
+            //     uint16_t HL = (state->h << 8) | state->l;
+            //     state->memory[HL] = state->a;
+            //     cycles += 7;
+            //     break;
+            // }
+            // case 0x7a:
+            // {
+            //     //MOV
+            //     state->a = state->d;
+            //     cycles += 5;
+            //     break;
+            // }
+            // case 0x7b:
+            // {
+            //     //MOV
+            //     state->a = state->e;
+            //     cycles += 5;
+            //     break;
+            // }
+            // case 0x7c:
+            // {
+            //     //MOV
+            //     state->a = state->h;
+            //     cycles += 5;
+            //     break;
+            // }
+            // case 0x7e:
+            // {
+            //     //MOV 
+            //     uint16_t HL = (state->h << 8) | state->l;
+            //     state->a = state->memory[HL];
+            //     cycles += 7;
+            //     break;
+            // }
             case 0xa7:
             {
                 //ANA
@@ -486,15 +888,17 @@ int Emulate8080Op(State8080* state)
                 cycles += 10;
                 break;
             }
-            // case 0xd3:
-            // {
-            //     //OUT
-            //     uint8_t port = state->memory[++state->pc];
-            //     machineOUT(port, state->a);
-            //     state->pc += 1;
-            //     // cycles += 10;
-            //     // break;
-            // }
+            case 0xd3:
+            {
+                //OUT
+                // uint8_t port = state->memory[state->pc + 1];
+                uint16_t port = state->pc + 1;
+                machineOUT(port, state);
+                state->pc += 1;
+                // printf("OUT: %d\n", port);
+                // cycles += 10;
+                break;
+            }
             case 0xd5:
             {
                 //PUSH
@@ -504,13 +908,15 @@ int Emulate8080Op(State8080* state)
                 cycles += 11;
                 break;
             }
-            // case 0xdb:
-            // {
-            //     //IN
-            //     uint8_t port = state->memory[++state->pc];
-            //     state->a = machineIN(port);
-            //     state->pc++; // might have to modify this.
-            // }
+            case 0xdb:
+            {
+                //IN
+                uint8_t port = state->memory[state->pc + 1];
+                state->a = machineIN(*state, port);
+                printf("IN: %d\n", state->a);
+                state->pc++; // might have to modify this.
+                break;
+            }
             case 0xe1:
             {
                 //POP
@@ -565,6 +971,11 @@ int Emulate8080Op(State8080* state)
                 cycles += 10;
                 break;
             }
+            case 0xf3:
+            {
+                state->int_enable = 0;
+                break;
+            }
             case 0xf5:
             {
                 //PUSH
@@ -585,6 +996,7 @@ int Emulate8080Op(State8080* state)
                 state->cc.interrupt_enabled = 1;
                 cycles += 4;
                 break;
+            }
             case 0xfe:
             {
                 //CPI
@@ -594,6 +1006,10 @@ int Emulate8080Op(State8080* state)
                 break;
             }
             case 0xff: UnimplementedInstruction(state); break;
+            // default:
+            // {
+            //     UnimplementedInstruction(state); break;
+            // }
         }
         // if (time() - lastInterrupt > 1.0/60.0) {
         //     if (state->cc.interrupt_enabled) {
@@ -602,11 +1018,10 @@ int Emulate8080Op(State8080* state)
         //         lastInterrupt = time();
         //     }
         // }
-        printf("Carry=%d, Parity=%d, Sign=%d, Zero=%d, Cycles=%d\n", state->cc.cy, state->cc.p,
-            state->cc.s, state->cc.z, cycles);
-        printf("A $%02x B $%02x C $%02x D $%02x E $%02x H $%02x L $%02x SP %04x\n\n",
-            state->a, state->b, state->c, state->d,
-            state->e, state->h, state->l, state->sp);
-    }
+        // printf("Carry=%d, Parity=%d, Sign=%d, Zero=%d, Cycles=%d\n", state->cc.cy, state->cc.p,
+        //     state->cc.s, state->cc.z, cycles);
+        // printf("A $%02x B $%02x C $%02x D $%02x E $%02x H $%02x L $%02x SP %04x\n\n",
+        //     state->a, state->b, state->c, state->d,
+        //     state->e, state->h, state->l, state->sp);
     
 }

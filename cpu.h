@@ -28,6 +28,11 @@ typedef struct State8080 {
     uint8_t     *memory;
     struct      ConditionCodes      cc;
     uint8_t     int_enable;
+    uint8_t port1;
+    uint16_t shift0, shift1;
+    uint8_t shift_offset;
+    uint16_t outport3;
+    uint16_t outport5;
 } State8080;
 
 

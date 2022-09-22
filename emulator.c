@@ -7,10 +7,8 @@
 #define HEIGHT 256
 #define WIDTH 224
 
-
 SDL_Surface *surface;
-SDL_Window *win;
-SDL_Surface *winsurf;
+SDL_Window *window;
 State8080 state;
 
 
@@ -35,7 +33,7 @@ void draw_video_ram() {
     }
 
     // Update window
-    if (SDL_UpdateWindowSurface(win)) {
+    if (SDL_UpdateWindowSurface(window)) {
         puts(SDL_GetError());
     }
 }
@@ -44,49 +42,52 @@ void draw_video_ram() {
 int main(int argc, char* argv[])
 {
     FILE *rom = fopen(argv[1], "rb");
+    state.pc = 0;
+    SDL_Event event;
+
+
     if (rom == NULL)
     {
         printf("error: Couldn't open %s\n", argv[1]);
         exit(1);
     }
-
     fseek(rom, 0L, SEEK_END);
     int fsize = ftell(rom);
     fseek(rom, 0L, SEEK_SET);
     state.memory = malloc(16384);
-
     fread(state.memory, fsize, 1, rom);
     fclose(rom);
-
-
 
     if (SDL_Init(SDL_INIT_VIDEO)) {
         printf("%s\n", SDL_GetError());
         exit(1);
     }
-
-    win = SDL_CreateWindow("SDL_CreateTexture",
+    window = SDL_CreateWindow("SDL_CreateTexture",
                     SDL_WINDOWPOS_UNDEFINED,
                     SDL_WINDOWPOS_UNDEFINED,
                     WIDTH, HEIGHT,
                     SDL_WINDOW_RESIZABLE);
-    if (!win)
+    if (!window)
     {
         printf("Failed to create window!");
     }
 
-    surface = SDL_GetWindowSurface(win);
+    surface = SDL_GetWindowSurface(window);
     if(!surface)
     {
         printf("Failed to get window surface!");
     }
 
-    state.pc = 0;
-    // for (int i = 0; i < 2; i++)
+
     while (state.pc < fsize)
     {
         Emulate8080Op(&state);
         draw_video_ram();
+        SDL_PollEvent(&event);
+        if (event.window.event == SDL_WINDOWEVENT_CLOSE)
+        {
+            break;
+        }
     }
 
     return 0;

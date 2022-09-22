@@ -138,10 +138,10 @@ int Emulate8080Op(State8080* state)
                 //DAD
                 uint16_t BC = (state->b<<8) | state->c;
                 uint16_t HL = (state->h<<8) | state->l;
-                uint16_t result = HL + BC;
-                state->h = result>>8;
-                state->l = result<<8;
-                CheckFlags(result, state);
+                HL = HL + BC;
+                state->h = HL>>8;
+                state->l = HL<<8;
+                CheckFlags(HL, state);
                 cycles += 10;
                 break;
             }
@@ -164,8 +164,9 @@ int Emulate8080Op(State8080* state)
             case 0x0f:
             {
                 //RRC
-                state->a = state->a>>1;
-                state->pc++;
+                uint8_t x = state->a;    
+                state->a = ((x & 1) << 7) | (x >> 1);
+                state->cc.cy = (1 == (x&1));
                 CheckFlags(state->a, state);
                 cycles += 4;
                 break;
@@ -194,10 +195,10 @@ int Emulate8080Op(State8080* state)
                 //DAD
                 uint16_t DE = (state->d<<8) | state->e;
                 uint16_t HL = (state->h<<8) | state->l;
-                uint16_t result = HL + DE;
-                state->h = result>>8;
-                state->l = result<<8;
-                CheckFlags(result, state);
+                HL = HL + DE;
+                state->h = HL >>8;
+                state->l = HL<<8;
+                CheckFlags(HL, state);
                 cycles += 10;
                 break;
             }
@@ -563,7 +564,7 @@ int Emulate8080Op(State8080* state)
             }
             case 0xff: UnimplementedInstruction(state); break;
         }
-        printf("\tCarry=%d, Parity=%d, Sign=%d, Zero=%d\n", state->cc.cy, state->cc.p,
+        printf("\tCarry=%d, Parity=%d, Sign=%d, Zero=%\n", state->cc.cy, state->cc.p,
             state->cc.s, state->cc.z);
         printf("\tA $%02x B $%02x C $%02x D $%02x E $%02x H $%02x L $%02x SP %04x\n\n",
             state->a, state->b, state->c, state->d,

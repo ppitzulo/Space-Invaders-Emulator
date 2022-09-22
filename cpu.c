@@ -6,7 +6,6 @@
 
 void CheckFlags(uint16_t result, State8080* state)
 {
-    // This might not work->
     if (result & 0xff)
     {
         state->cc.z = 0;
@@ -34,7 +33,7 @@ void CheckFlags(uint16_t result, State8080* state)
         state->cc.cy = 0;
     }
 
-    // Calculate parity
+
     int PositiveBits = 0;
     for (int c = 7; c >= 0; c--)
     {
@@ -140,7 +139,7 @@ int Emulate8080Op(State8080* state)
                 uint16_t HL = (state->h<<8) | state->l;
                 HL = HL + BC;
                 state->h = HL>>8;
-                state->l = HL<<8;
+                state->l = HL;
                 CheckFlags(HL, state);
                 cycles += 10;
                 break;
@@ -196,8 +195,8 @@ int Emulate8080Op(State8080* state)
                 uint16_t DE = (state->d<<8) | state->e;
                 uint16_t HL = (state->h<<8) | state->l;
                 HL = HL + DE;
-                state->h = HL >>8;
-                state->l = HL<<8;
+                state->h = HL>>8;
+                state->l = HL;
                 CheckFlags(HL, state);
                 cycles += 10;
                 break;
@@ -243,7 +242,7 @@ int Emulate8080Op(State8080* state)
                 uint16_t HL = (state->h<<8) | state->l;
                 HL = (HL * 2);
                 state->h = HL>>8;
-                state->l = HL<<8;
+                state->l = HL;
                 CheckFlags(HL, state);
                 cycles += 10;
                 break;
@@ -424,7 +423,7 @@ int Emulate8080Op(State8080* state)
                 //ADI
                 state->a += opcode[1];
                 CheckFlags(state->a, state);
-                state->pc += 2;
+                state->pc += 1;
                 cycles += 7;
                 break;
             }
@@ -440,14 +439,10 @@ int Emulate8080Op(State8080* state)
             {
                 //CALL
                 uint16_t    ret = state->pc+2;    
-                state->memory[state->sp-1] = (ret >> 8) & 0xff;    
-                state->memory[state->sp-2] = (ret & 0xff);    
+                state->memory[state->sp-1] = ret >> 8;    
+                state->memory[state->sp-2] = ret;    
                 state->sp = state->sp - 2;    
                 state->pc = (opcode[2] << 8) | opcode[1];
-                // state->memory[state->pc - 1] = state->pc>>8;
-                // state->memory[state->pc - 2] = state->pc<<8;
-                // state->sp = state->sp - 2;
-                // state->pc = (opcode[2]<<8) | opcode[1];
                 cycles += 17;
                 break;
             }
@@ -499,7 +494,7 @@ int Emulate8080Op(State8080* state)
                 //ANI
                 state->a = state->a & opcode[1];
                 CheckFlags(state->a, state);
-                state->pc += 2;
+                state->pc += 1;
                 cycles += 7;
                 break;
             }
@@ -555,14 +550,14 @@ int Emulate8080Op(State8080* state)
             {
                 //CPI
                 CheckFlags((state->a - opcode[1]), state);
-                state->pc += 2;
+                state->pc += 1;
                 cycles += 7;
                 break;
             }
             case 0xff: UnimplementedInstruction(state); break;
         }
-        printf("\tCarry=%d, Parity=%d, Sign=%d, Zero=%d\n", state->cc.cy, state->cc.p,
-            state->cc.s, state->cc.z);
+        printf("\tCarry=%d, Parity=%d, Sign=%d, Zero=%d, Cycles=%d\n", state->cc.cy, state->cc.p,
+            state->cc.s, state->cc.z, cycles);
         printf("\tA $%02x B $%02x C $%02x D $%02x E $%02x H $%02x L $%02x SP %04x\n\n",
             state->a, state->b, state->c, state->d,
             state->e, state->h, state->l, state->sp);

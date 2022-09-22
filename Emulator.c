@@ -68,7 +68,7 @@ int main(int argc, char* argv[])
     win = SDL_CreateWindow("SDL_CreateTexture",
                     SDL_WINDOWPOS_UNDEFINED,
                     SDL_WINDOWPOS_UNDEFINED,
-                    2*WIDTH, 2*HEIGHT,
+                    WIDTH, HEIGHT,
                     SDL_WINDOW_RESIZABLE);
     if (!win)
     {
